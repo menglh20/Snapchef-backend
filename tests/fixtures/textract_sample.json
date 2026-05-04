@@ -1,0 +1,76 @@
+{
+  "ExpenseDocuments": [
+    {
+      "ExpenseIndex": 1,
+      "SummaryFields": [
+        {
+          "Type": {"Text": "SUBTOTAL", "Confidence": 99.0},
+          "ValueDetection": {"Text": "$11.97", "Confidence": 98.0}
+        },
+        {
+          "Type": {"Text": "TAX", "Confidence": 99.0},
+          "ValueDetection": {"Text": "$0.96", "Confidence": 98.0}
+        },
+        {
+          "Type": {"Text": "TOTAL", "Confidence": 99.0},
+          "ValueDetection": {"Text": "$12.93", "Confidence": 98.0}
+        }
+      ],
+      "LineItemGroups": [
+        {
+          "LineItemGroupIndex": 1,
+          "LineItems": [
+            {
+              "LineItemExpenseFields": [
+                {
+                  "Type": {"Text": "ITEM", "Confidence": 99.0},
+                  "ValueDetection": {"Text": "WHL MLK 1GAL", "Confidence": 98.0}
+                },
+                {
+                  "Type": {"Text": "QUANTITY", "Confidence": 99.0},
+                  "ValueDetection": {"Text": "1", "Confidence": 98.0}
+                },
+                {
+                  "Type": {"Text": "PRICE", "Confidence": 99.0},
+                  "ValueDetection": {"Text": "$3.99", "Confidence": 98.0}
+                }
+              ]
+            },
+            {
+              "LineItemExpenseFields": [
+                {
+                  "Type": {"Text": "ITEM", "Confidence": 99.0},
+                  "ValueDetection": {"Text": "BANANAS", "Confidence": 98.0}
+                },
+                {
+                  "Type": {"Text": "QUANTITY", "Confidence": 99.0},
+                  "ValueDetection": {"Text": "2", "Confidence": 98.0}
+                },
+                {
+                  "Type": {"Text": "UNIT_PRICE", "Confidence": 99.0},
+                  "ValueDetection": {"Text": "$0.59", "Confidence": 98.0}
+                },
+                {
+                  "Type": {"Text": "PRICE", "Confidence": 99.0},
+                  "ValueDetection": {"Text": "$1.18", "Confidence": 98.0}
+                }
+              ]
+            },
+            {
+              "LineItemExpenseFields": [
+                {
+                  "Type": {"Text": "ITEM", "Confidence": 99.0},
+                  "ValueDetection": {"Text": "POTATO CHIPS", "Confidence": 98.0}
+                },
+                {
+                  "Type": {"Text": "PRICE", "Confidence": 99.0},
+                  "ValueDetection": {"Text": "$3.49", "Confidence": 98.0}
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
