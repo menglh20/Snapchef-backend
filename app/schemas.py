@@ -57,3 +57,23 @@ class ReceiptResponse(BaseModel):
     items: list[ReceiptItem]
     totals: ReceiptTotals = Field(default_factory=ReceiptTotals)
     classification_warning: Optional[str] = None
+
+
+class RecipeListRequest(BaseModel):
+    trigger: str = Field(..., min_length=1)
+    fridge: list[str] = Field(default_factory=list)
+
+
+class RecipeListResponse(BaseModel):
+    dishes: list[str]
+
+
+class RecipeStepsRequest(BaseModel):
+    dish: str = Field(..., min_length=1)
+    fridge: list[str] = Field(default_factory=list)
+
+
+class RecipeStepsResponse(BaseModel):
+    title: str
+    time_min: int
+    steps: list[str]
