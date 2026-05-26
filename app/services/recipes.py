@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 MODEL = "claude-opus-4-7"
 
+DISH_NAME_MAX_LEN = 15
+
 DISHES_SYSTEM_PROMPT = (
     "You are a home cooking assistant. The user gives you a 'trigger' ingredient (often the "
     "main protein or hero ingredient they want to use) and a list of other ingredients "
@@ -22,6 +24,10 @@ DISHES_SYSTEM_PROMPT = (
     "common pantry staples (salt, pepper, oil, basic spices, flour, sugar, water).\n"
     "- Return 3 to 6 dishes. Use short, recognizable dish names (e.g. 'Caprese Salad', "
     "'Tomato Omelette'). No descriptions, no numbering.\n"
+    "- HARD LIMIT: each dish name must be 15 characters or fewer (spaces count). "
+    "Prefer concise canonical names; drop filler words like 'and', 'with', 'fresh'. "
+    "If a real name is too long, shorten it (e.g. 'Tomato and Mozzarella Pizza' -> "
+    "'Tomato Pizza').\n"
     "- Always return results via the submit_dish_list tool."
 )
 
@@ -120,8 +126,12 @@ def suggest_dishes(trigger: str, fridge: list[str]) -> list[str]:
     for d in dishes_raw:
         if isinstance(d, str):
             name = d.strip()
-            if name:
-                dishes.append(name)
+            if not name:
+                continue
+            if len(name) > DISH_NAME_MAX_LEN:
+                logger.warning("Dropping over-length dish name: %r", name)
+                continue
+            dishes.append(name)
     return dishes
 
 
