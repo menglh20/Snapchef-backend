@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     anthropic_api_key: str
     max_image_bytes: int = 8 * 1024 * 1024
 
+    # Baidu fruit/vegetable (果蔬) recognition
+    baidu_api_key: str | None = None
+    baidu_secret_key: str | None = None
+    # Top result below this confidence (or flagged 非果蔬食材) -> "Uncertain"
+    baidu_produce_min_score: float = 0.5
+    # Baidu caps the base64-encoded image at 4MB.
+    baidu_max_base64_bytes: int = 4 * 1024 * 1024
+
 
 @lru_cache
 def get_settings() -> Settings:

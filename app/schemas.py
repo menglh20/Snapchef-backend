@@ -77,3 +77,14 @@ class RecipeStepsResponse(BaseModel):
     title: str
     time_min: int
     steps: list[str]
+
+
+class ProduceResponse(BaseModel):
+    # English produce name, or "Uncertain" when the image is not a fruit/vegetable.
+    name: str
+    # Chinese name returned by Baidu (None when uncertain). For debugging/telemetry.
+    raw_name: Optional[str] = None
+    confidence: Optional[float] = None
+
+
+UNCERTAIN_PRODUCE = "Uncertain"
