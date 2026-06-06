@@ -20,7 +20,8 @@
 |---|---|---|---|
 | GET | `/healthz` | 健康检查，连通性自检 | 否 |
 | POST | `/receipts/analyze` | 上传小票图片，返回结构化商品清单 | 是 |
-| POST | `/produce/recognize` | 上传果蔬图片，返回英文名称（非果蔬返回 `Uncertain`） | 是 |
+| POST | `/produce/recognize` | 上传果蔬图片（百度识别），返回英文名称（非果蔬返回 `Uncertain`） | 是 |
+| POST | `/produce/recognize-llm` | 同上，识别改用 Claude 视觉模型（更适配塑料模型/手持场景） | 是 |
 
 ---
 
@@ -236,6 +237,63 @@ curl -X POST https://snapchef-production.up.railway.app/produce/recognize \
 | **502** | 百度识别调用失败，或 Claude 翻译失败 | 提示网络问题，可重试 1-2 次 |
 
 > 注意：与 `/receipts/analyze` 不同，本接口翻译失败会返回 **502**（没有合理的降级英文名），不会返回 200。
+
+---
+
+## 4. 果蔬识别（LLM 视觉）`POST /produce/recognize-llm`
+
+**与 `/produce/recognize` 请求和响应完全一致**，区别在于识别过程：不调用百度，而是把图片直接交给 Claude 视觉模型，由其一次完成"识别 + 英文命名"。
+
+使用场景已写入模型提示词：**一个人手持单个蔬菜/水果正对镜头**，模型只识别手中物体、忽略人脸/手/背景。**塑料果蔬模型也按真实果蔬识别**（塑料番茄 → `Tomato`），便于测试。
+
+### 何时用哪个
+
+| | `/produce/recognize`（百度） | `/produce/recognize-llm`（Claude） |
+|---|---|---|
+| 识别真实果蔬 | 准 | 准 |
+| 塑料模型 / 手持近距 / 构图差 | 容易判为 `Uncertain` | 更稳 |
+| 延迟 | 较低 | 略高（视觉推理）|
+| 成本 | 低 | 较高 |
+
+> 实测：手持塑料玉米的设备图，百度返回 `Uncertain`（最高分仅 0.37），LLM 返回 `Corn` (0.95)。**测试阶段建议用本接口。**
+
+### 请求
+
+与 `/produce/recognize` 相同（multipart 单字段 `image`，`image/jpeg` 或 `image/png`）。
+
+> 大小约束略有不同：原图 ≤ **8 MB**，且 base64 编码后 ≤ **5 MB**（Claude 单图上限，约原图 ≤ 3.75 MB）。
+
+**示例 curl**：
+```bash
+curl -X POST https://snapchef-production.up.railway.app/produce/recognize-llm \
+  -H "X-API-Key: <your-key>" \
+  -F "image=@corn.jpg;type=image/jpeg"
+```
+
+### 响应 `200 OK`
+
+字段与 `/produce/recognize` 完全相同；`raw_name` 在本接口恒为 `null`（无中文中间结果）。
+
+识别为果蔬：
+```json
+{ "name": "Corn", "raw_name": null, "confidence": 0.95 }
+```
+
+非果蔬 / 未识别：
+```json
+{ "name": "Uncertain", "raw_name": null, "confidence": null }
+```
+
+`confidence` 为模型自评置信度（0~1），仅供参考。`Uncertain` 由模型判定手持物不是果蔬时返回。
+
+### 错误响应
+
+| HTTP | 触发条件 | 设备处理建议 |
+|---|---|---|
+| **400** | 文件类型不是 jpeg/png；文件为空；原图超 8MB；或编码后超 Claude 5MB 上限 | 提示用户重拍 / 压缩图像 |
+| **401** | `X-API-Key` 错误 | 致命错误，不应重试 |
+| **422** | `image` 字段缺失 | 固件 bug，检查字段名 |
+| **502** | Claude 视觉调用失败 | 提示网络问题，可重试 1-2 次 |
 
 ---
 

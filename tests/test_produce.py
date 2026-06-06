@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.services import baidu, translator
+from app.services import baidu, translator, vision
 
 HEADERS = {"X-API-Key": "test-api-key-1234"}
 
@@ -144,3 +144,74 @@ def test_recognize_rejects_wrong_api_key(client):
         "/produce/recognize", headers={"X-API-Key": "wrong"}, files=_upload()
     )
     assert resp.status_code == 401
+
+
+# --- /produce/recognize-llm (Claude vision path) ---
+
+
+def test_recognize_llm_happy_path(client, monkeypatch):
+    captured = {}
+
+    def fake_recognize(image_bytes, media_type):
+        captured["media_type"] = media_type
+        return {"is_produce": True, "name": "Napa Cabbage", "confidence": 0.92}
+
+    monkeypatch.setattr(vision, "recognize_produce", fake_recognize)
+
+    resp = client.post("/produce/recognize-llm", headers=HEADERS, files=_upload())
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["name"] == "Napa Cabbage"
+    assert body["confidence"] == 0.92
+    assert body["raw_name"] is None
+    assert captured["media_type"] == "image/jpeg"
+
+
+def test_recognize_llm_plastic_model_is_accepted(client, monkeypatch):
+    monkeypatch.setattr(
+        vision,
+        "recognize_produce",
+        lambda b, m: {"is_produce": True, "name": "Tomato", "confidence": 0.7},
+    )
+
+    resp = client.post("/produce/recognize-llm", headers=HEADERS, files=_upload())
+
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Tomato"
+
+
+def test_recognize_llm_non_produce_is_uncertain(client, monkeypatch):
+    monkeypatch.setattr(
+        vision,
+        "recognize_produce",
+        lambda b, m: {"is_produce": False, "name": "", "confidence": 0.1},
+    )
+
+    resp = client.post("/produce/recognize-llm", headers=HEADERS, files=_upload())
+
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Uncertain"
+
+
+def test_recognize_llm_502_when_claude_fails(client, monkeypatch):
+    def boom(b, m):
+        raise RuntimeError("anthropic outage")
+
+    monkeypatch.setattr(vision, "recognize_produce", boom)
+
+    resp = client.post("/produce/recognize-llm", headers=HEADERS, files=_upload())
+
+    assert resp.status_code == 502
+
+
+def test_recognize_llm_rejects_bad_content_type(client):
+    resp = client.post(
+        "/produce/recognize-llm", headers=HEADERS, files=_upload(content_type="text/plain")
+    )
+    assert resp.status_code == 400
+
+
+def test_recognize_llm_requires_api_key(client):
+    resp = client.post("/produce/recognize-llm", files=_upload())
+    assert resp.status_code == 422
