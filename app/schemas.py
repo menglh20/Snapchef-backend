@@ -88,3 +88,30 @@ class ProduceResponse(BaseModel):
 
 
 UNCERTAIN_PRODUCE = "Uncertain"
+
+# Controlled vocabulary for LLM produce recognition (/produce/recognize-llm).
+# Title Case, singular. The vision tool's `name` field is an enum over this list so the
+# model can only emit a canonical name (no "tomatoes" vs "Roma Tomato" drift).
+# To support a new produce type, add it here — no other code change needed.
+PRODUCE_VOCAB: list[str] = [
+    # Fruits
+    "Apple", "Banana", "Orange", "Tangerine", "Lemon", "Lime", "Grapefruit",
+    "Pear", "Peach", "Nectarine", "Plum", "Apricot", "Cherry", "Strawberry",
+    "Blueberry", "Raspberry", "Blackberry", "Cranberry", "Grape", "Watermelon",
+    "Cantaloupe", "Honeydew", "Pineapple", "Mango", "Papaya", "Kiwi", "Avocado",
+    "Pomegranate", "Fig", "Persimmon", "Lychee", "Longan", "Dragon Fruit",
+    "Passion Fruit", "Coconut", "Guava", "Date", "Jujube",
+    # Vegetables
+    "Tomato", "Potato", "Sweet Potato", "Carrot", "Onion", "Garlic", "Ginger",
+    "Scallion", "Leek", "Shallot", "Celery", "Cucumber", "Bellpepper",
+    "Chili Pepper", "Eggplant", "Zucchini", "Pumpkin", "Squash", "Corn",
+    "Broccoli", "Cauliflower", "Cabbage", "Napa Cabbage", "Bok Choy", "Lettuce",
+    "Spinach", "Kale", "Cilantro", "Parsley", "Basil", "Mint", "Mushroom",
+    "Asparagus", "Green Bean", "Pea", "Snow Pea", "Sugar Snap Pea", "Edamame",
+    "Okra", "Radish", "Daikon", "Turnip", "Beet", "Brussels Sprout", "Artichoke",
+    "Bitter Melon", "Winter Melon", "Lotus Root", "Bamboo Shoot", "Bean Sprout",
+    "Taro", "Yam", "Chayote", "Fennel",
+]
+
+# Returned by the model when the item is produce but not in PRODUCE_VOCAB.
+PRODUCE_OTHER = "Other"

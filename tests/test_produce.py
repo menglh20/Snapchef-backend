@@ -185,13 +185,38 @@ def test_recognize_llm_non_produce_is_uncertain(client, monkeypatch):
     monkeypatch.setattr(
         vision,
         "recognize_produce",
-        lambda b, m: {"is_produce": False, "name": "", "confidence": 0.1},
+        lambda b, m: {"is_produce": False, "name": "Other", "confidence": 0.1},
     )
 
     resp = client.post("/produce/recognize-llm", headers=HEADERS, files=_upload())
 
     assert resp.status_code == 200
     assert resp.json()["name"] == "Uncertain"
+
+
+def test_recognize_llm_other_produce_is_uncertain(client, monkeypatch):
+    # Produce that falls outside the controlled vocabulary -> "Other" -> Uncertain.
+    monkeypatch.setattr(
+        vision,
+        "recognize_produce",
+        lambda b, m: {"is_produce": True, "name": "Other", "confidence": 0.6},
+    )
+
+    resp = client.post("/produce/recognize-llm", headers=HEADERS, files=_upload())
+
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Uncertain"
+
+
+def test_vision_tool_name_is_constrained_to_vocab():
+    # The tool schema must restrict `name` to the controlled vocabulary (+ "Other").
+    from app.schemas import PRODUCE_OTHER, PRODUCE_VOCAB
+
+    enum = vision.TOOL_DEFINITION["input_schema"]["properties"]["name"]["enum"]
+    assert "Tomato" in enum
+    assert "Napa Cabbage" in enum
+    assert PRODUCE_OTHER in enum
+    assert set(enum) == set(PRODUCE_VOCAB) | {PRODUCE_OTHER}
 
 
 def test_recognize_llm_502_when_claude_fails(client, monkeypatch):

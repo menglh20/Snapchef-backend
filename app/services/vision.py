@@ -12,25 +12,31 @@ from functools import lru_cache
 import anthropic
 
 from app.config import get_settings
+from app.schemas import PRODUCE_OTHER, PRODUCE_VOCAB
 
 logger = logging.getLogger(__name__)
 
 # Vision-capable; Haiku 4.5 keeps this cheap for a simple single-object identification.
 MODEL = "claude-haiku-4-5"
 
+# The model may only emit a name from the controlled vocabulary (or "Other").
+NAME_ENUM = [*PRODUCE_VOCAB, PRODUCE_OTHER]
+
 SYSTEM_PROMPT = (
     "You identify produce from a photo. Usage scenario: one person stands in front of the "
     "camera holding a single vegetable or fruit in their hand(s). Your job is to identify "
     "which vegetable or fruit it is.\n\n"
     "Rules:\n"
-    "- Return the common English grocery name in Title Case, singular (e.g. 'Tomato', "
-    "'Banana', 'Napa Cabbage').\n"
+    "- The `name` MUST be one of the exact values allowed by the tool schema (a fixed "
+    "vocabulary of produce names). Pick the single best match.\n"
     "- Focus only on the held item. Ignore the person, hands, clothing, and background.\n"
     "- The item may be a plastic/fake produce model (these are used during testing). Treat a "
     "recognizable model as the real produce it represents and identify it normally — a plastic "
     "tomato is 'Tomato'.\n"
+    f"- If the held item is clearly a fruit or vegetable but none of the allowed names fit, set "
+    f"is_produce=true and name='{PRODUCE_OTHER}'.\n"
     "- If the held object is NOT a fruit or vegetable, or no produce is clearly visible, set "
-    "is_produce=false.\n"
+    f"is_produce=false (you may use name='{PRODUCE_OTHER}').\n"
     "- Set confidence between 0 and 1 reflecting how sure you are of the identification.\n"
     "Always return the result via the submit_produce tool."
 )
@@ -42,7 +48,7 @@ TOOL_DEFINITION = {
         "type": "object",
         "properties": {
             "is_produce": {"type": "boolean"},
-            "name": {"type": "string"},
+            "name": {"type": "string", "enum": NAME_ENUM},
             "confidence": {"type": "number", "minimum": 0, "maximum": 1},
         },
         "required": ["is_produce", "name", "confidence"],

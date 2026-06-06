@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from app.config import get_settings
 from app.deps import verify_api_key
-from app.schemas import UNCERTAIN_PRODUCE, ProduceResponse
+from app.schemas import PRODUCE_OTHER, UNCERTAIN_PRODUCE, ProduceResponse
 from app.services import baidu, translator, vision
 
 logger = logging.getLogger(__name__)
@@ -119,8 +119,8 @@ async def recognize_produce_llm(image: UploadFile = File(...)) -> ProduceRespons
     name = (result.get("name") or "").strip()
     confidence = result.get("confidence")
 
-    # The model sets is_produce=false when the held item is not a fruit/vegetable.
-    if not result.get("is_produce") or not name:
+    # Not produce, or produce outside the controlled vocabulary ("Other") -> Uncertain.
+    if not result.get("is_produce") or not name or name == PRODUCE_OTHER:
         return ProduceResponse(name=UNCERTAIN_PRODUCE)
 
     return ProduceResponse(

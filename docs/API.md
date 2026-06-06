@@ -286,6 +286,8 @@ curl -X POST https://snapchef-production.up.railway.app/produce/recognize-llm \
 
 `confidence` 为模型自评置信度（0~1），仅供参考。`Uncertain` 由模型判定手持物不是果蔬时返回。
 
+> **受控词表**：`name` 取值被限定在后端维护的固定果蔬词表内（通过 tool schema 的 `enum` 强约束），保证输出规范、便于下游匹配——例如永远是 `Tomato`，不会出现 `tomatoes` / `Roma Tomato` 等变体。若手持物是果蔬但不在词表内，同样返回 `Uncertain`。需要新增可识别品类时，在后端 `app/schemas.py` 的 `PRODUCE_VOCAB` 里加一项即可。
+
 ### 错误响应
 
 | HTTP | 触发条件 | 设备处理建议 |
