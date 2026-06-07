@@ -59,6 +59,11 @@ STEPS_SYSTEM_PROMPT = (
     "- Prefer ingredients from the fridge list and common pantry staples (salt, pepper, oil, "
     "basic spices). If something essential is missing, write the step anyway as if the cook "
     "will obtain it; do not lecture the user about missing items.\n"
+    "- used_fridge_items: the items FROM THE PROVIDED fridge list that this recipe actually "
+    "uses. Echo each one exactly as it appears in the fridge list. Empty list if none apply.\n"
+    "- missing_items: ingredients the recipe needs that are NOT in the fridge list, so the cook "
+    "must buy them. EXCLUDE common pantry staples (salt, pepper, cooking oil, basic spices, "
+    "water, sugar, flour) — assume those are on hand. Empty list if nothing else is needed.\n"
     "- Always return results via the submit_recipe_steps tool."
 )
 
@@ -75,8 +80,16 @@ STEPS_TOOL = {
                 "minItems": 1,
                 "items": {"type": "string", "minLength": 1},
             },
+            "used_fridge_items": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1},
+            },
+            "missing_items": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1},
+            },
         },
-        "required": ["title", "time_min", "steps"],
+        "required": ["title", "time_min", "steps", "used_fridge_items", "missing_items"],
         "additionalProperties": False,
     },
 }
@@ -180,4 +193,37 @@ def generate_steps(dish: str, fridge: list[str]) -> dict:
     if not steps:
         raise RuntimeError("Recipe response missing steps")
 
-    return {"title": title.strip(), "time_min": time_min, "steps": steps}
+    # Reconcile against the actual fridge so the model can't claim items that
+    # aren't there (used) or flag items that are (missing).
+    fridge_by_lower = {
+        f.strip().lower(): f.strip() for f in fridge if isinstance(f, str) and f.strip()
+    }
+
+    used: list[str] = []
+    seen_used: set[str] = set()
+    for item in tool_input.get("used_fridge_items") or []:
+        if not isinstance(item, str):
+            continue
+        key = item.strip().lower()
+        if key in fridge_by_lower and key not in seen_used:
+            used.append(fridge_by_lower[key])
+            seen_used.add(key)
+
+    missing: list[str] = []
+    seen_missing: set[str] = set()
+    for item in tool_input.get("missing_items") or []:
+        if not isinstance(item, str):
+            continue
+        text = item.strip()
+        key = text.lower()
+        if text and key not in fridge_by_lower and key not in seen_missing:
+            missing.append(text)
+            seen_missing.add(key)
+
+    return {
+        "title": title.strip(),
+        "time_min": time_min,
+        "steps": steps,
+        "used_fridge_items": used,
+        "missing_items": missing,
+    }

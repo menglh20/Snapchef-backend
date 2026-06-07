@@ -77,6 +77,10 @@ class RecipeStepsResponse(BaseModel):
     title: str
     time_min: int
     steps: list[str]
+    # Items from the request's fridge list that this recipe uses.
+    used_fridge_items: list[str] = Field(default_factory=list)
+    # Ingredients the recipe needs that are NOT in the fridge (excludes pantry staples).
+    missing_items: list[str] = Field(default_factory=list)
 
 
 class ProduceResponse(BaseModel):

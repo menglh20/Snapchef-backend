@@ -5,7 +5,7 @@ from functools import lru_cache
 import anthropic
 
 from app.config import get_settings
-from app.schemas import CATEGORY_VALUES, Category, ClassifiedItem
+from app.schemas import CATEGORY_VALUES, PRODUCE_VOCAB, Category, ClassifiedItem
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,12 @@ SYSTEM_PROMPT = (
     "pantry items, beverages that ship at room temperature, snacks, household goods, sturdy produce like "
     "potatoes/onions/winter squash.\n"
     "- When ambiguous, prefer the safer choice for perishables.\n\n"
+    "Canonical produce names (soft preference): when an item is a fresh fruit or vegetable that "
+    "matches one of the names below, set normalized_name to that exact name (singular, Title Case) "
+    "so produce naming stays consistent with the rest of the system. This applies only to the "
+    "produce name itself — do not append quantities/weights to it. For produce not in this list, "
+    "or for any non-produce item, normalize the name normally and ignore this list.\n"
+    f"Canonical names: {', '.join(PRODUCE_VOCAB)}.\n\n"
     "Always return results via the submit_classified_items tool. Preserve the input index for every item."
 )
 
